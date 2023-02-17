@@ -1,0 +1,113 @@
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id          Int      @id @unique @default(autoincrement())
+  basic       Boolean  @default(false)
+  pinned      Boolean? @default(false)
+  email       String   @unique
+  password    String
+  role        Role     @default(USER)
+  cartId      Int
+  favoritesId Int
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+model Product {
+  id          Int                 @id @unique @default(autoincrement())
+  name        String              @unique
+  type        ProductOnType[]
+  price       Int
+  sale        Int
+  description String
+  stock       Int
+  sizes       ProductOnSize[]
+  image       ProductImage[]
+  cart        ProductOnCart[]
+  favorites   ProductOnFavorite[]
+}
+
+model ProductImage {
+  id        Int     @id @unique @default(autoincrement())
+  product   Product @relation(fields: [productId], references: [id])
+  productId Int
+  name      String
+  url       String  @unique
+}
+
+model ProductType {
+  id       Int             @id @unique @default(autoincrement())
+  name     String          @unique
+  products ProductOnType[]
+}
+
+model ProductSize {
+  id       Int             @id @unique @default(autoincrement())
+  name     String          @unique
+  products ProductOnSize[]
+}
+
+model Cart {
+  id       Int             @id @unique @default(autoincrement())
+  products ProductOnCart[]
+}
+
+model Favorites {
+  id       Int                 @id @unique @default(autoincrement())
+  products ProductOnFavorite[]
+}
+
+model ProductOnSize {
+  size       ProductSize @relation(fields: [sizeId], references: [id])
+  sizeId     Int
+  product    Product     @relation(fields: [productId], references: [id])
+  productId  Int
+  assignedAt DateTime    @default(now())
+  assignedBy String
+
+  @@id([sizeId, productId])
+}
+
+model ProductOnType {
+  type       ProductType @relation(fields: [typeId], references: [id])
+  typeId     Int
+  product    Product     @relation(fields: [productId], references: [id])
+  productId  Int
+  assignedAt DateTime    @default(now())
+  assignedBy String
+
+  @@id([typeId, productId])
+}
+
+model ProductOnCart {
+  cart       Cart     @relation(fields: [cartId], references: [id])
+  cartId     Int
+  product    Product  @relation(fields: [productId], references: [id])
+  productId  Int
+  assignedAt DateTime @default(now())
+  assignedBy String
+
+  @@id([cartId, productId])
+}
+
+model ProductOnFavorite {
+  favorite   Favorites @relation(fields: [favoriteId], references: [id])
+  favoriteId Int
+  product    Product   @relation(fields: [productId], references: [id])
+  productId  Int
+  assignedAt DateTime  @default(now())
+  assignedBy String
+
+  @@id([favoriteId, productId])
+}

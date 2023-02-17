@@ -1,8 +1,10 @@
 import express, { Express, Request, Response } from 'express';
+import dotenv from 'dotenv';
 
+dotenv.config();
+
+const port = process.env.PORT || 9000;
 const app: Express = express();
-// const port = process.env.PORT;
-const port = 9000;
 
 app.use(express.json())
 app.get('/', (req: Request, res: Response) => {
