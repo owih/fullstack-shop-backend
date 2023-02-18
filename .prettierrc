@@ -2,9 +2,10 @@
   "extends": [
     "plugin:prettier/recommended"
   ],
-  "bracketSpacing": false,
+  "bracketSpacing": true,
   "tabWidth": 2,
   "useTabs": false,
   "trailingComma": "all",
-  "singleQuote": true
+  "singleQuote": true,
+  "printWidth": 95
 }

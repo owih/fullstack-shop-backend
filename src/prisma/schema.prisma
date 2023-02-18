@@ -10,8 +10,6 @@ datasource db {
 
 model User {
   id          Int      @id @unique @default(autoincrement())
-  basic       Boolean  @default(false)
-  pinned      Boolean? @default(false)
   email       String   @unique
   password    String
   role        Role     @default(USER)
