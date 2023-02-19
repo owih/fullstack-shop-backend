@@ -1,3 +1,5 @@
+import { JwtPayload } from 'jsonwebtoken';
+
 type CreateProductRequest = {
   name: string;
   type: string;
@@ -5,8 +7,8 @@ type CreateProductRequest = {
   sale?: number;
   description: string;
   stock: number;
-  sizes: string[];
   images?: File[];
+  user: string | JwtPayload;
 };
 
 export default CreateProductRequest;

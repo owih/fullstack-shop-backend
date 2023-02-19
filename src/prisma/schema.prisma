@@ -9,10 +9,10 @@ datasource db {
 }
 
 model User {
-  id          Int      @id @unique @default(autoincrement())
-  email       String   @unique
+  id          Int    @id @unique @default(autoincrement())
+  email       String @unique
   password    String
-  role        Role     @default(USER)
+  role        Role   @default(USER)
   cartId      Int
   favoritesId Int
 }
@@ -30,7 +30,6 @@ model Product {
   sale        Int
   description String
   stock       Int
-  sizes       ProductOnSize[]
   image       ProductImage[]
   cart        ProductOnCart[]
   favorites   ProductOnFavorite[]
@@ -50,12 +49,6 @@ model ProductType {
   products ProductOnType[]
 }
 
-model ProductSize {
-  id       Int             @id @unique @default(autoincrement())
-  name     String          @unique
-  products ProductOnSize[]
-}
-
 model Cart {
   id       Int             @id @unique @default(autoincrement())
   products ProductOnCart[]
@@ -64,17 +57,6 @@ model Cart {
 model Favorites {
   id       Int                 @id @unique @default(autoincrement())
   products ProductOnFavorite[]
-}
-
-model ProductOnSize {
-  size       ProductSize @relation(fields: [sizeId], references: [id])
-  sizeId     Int
-  product    Product     @relation(fields: [productId], references: [id])
-  productId  Int
-  assignedAt DateTime    @default(now())
-  assignedBy String
-
-  @@id([sizeId, productId])
 }
 
 model ProductOnType {
@@ -89,6 +71,7 @@ model ProductOnType {
 }
 
 model ProductOnCart {
+  count      Int      @default(1)
   cart       Cart     @relation(fields: [cartId], references: [id])
   cartId     Int
   product    Product  @relation(fields: [productId], references: [id])

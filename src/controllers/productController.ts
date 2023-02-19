@@ -5,6 +5,9 @@ import { NextFunction } from 'express';
 import { TypedResponse } from '../types/response/typedResponse';
 import RequestWithBody from '../types/request/requestWithBody';
 import RequestWithQuery from '../types/request/requestWithQuery';
+import CreateProductRequest from '../types/product/createProductRequest';
+import { RequestWithQueryAndBody } from '../types/request/requestWithQueryAndBody';
+import DeleteProductRequest from '../types/product/deleteProductRequest';
 
 class ProductController {
   async getAll(
@@ -88,7 +91,7 @@ class ProductController {
   }
 
   async create(
-    req: RequestWithBody<Product>,
+    req: RequestWithBody<CreateProductRequest>,
     res: TypedResponse<{ product: Product | null }>,
     next: NextFunction,
   ) {
@@ -118,7 +121,7 @@ class ProductController {
   }
 
   async delete(
-    req: RequestWithQuery<{ id: string }>,
+    req: RequestWithQueryAndBody<{ id: string }, DeleteProductRequest>,
     res: TypedResponse<{ product: Product | null }>,
     next: NextFunction,
   ) {
