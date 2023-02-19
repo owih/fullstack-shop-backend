@@ -23,8 +23,8 @@ enum Role {
 }
 
 model Product {
-  id          Int                 @id @unique @default(autoincrement())
-  name        String              @unique
+  id          Int                  @id @unique @default(autoincrement())
+  name        String               @unique
   type        ProductOnType[]
   price       Int
   sale        Int
@@ -32,7 +32,7 @@ model Product {
   stock       Int
   image       ProductImage[]
   cart        ProductOnCart[]
-  favorites   ProductOnFavorite[]
+  favorites   ProductOnFavorites[]
 }
 
 model ProductImage {
@@ -55,8 +55,8 @@ model Cart {
 }
 
 model Favorites {
-  id       Int                 @id @unique @default(autoincrement())
-  products ProductOnFavorite[]
+  id       Int                  @id @unique @default(autoincrement())
+  products ProductOnFavorites[]
 }
 
 model ProductOnType {
@@ -82,13 +82,13 @@ model ProductOnCart {
   @@id([cartId, productId])
 }
 
-model ProductOnFavorite {
-  favorite   Favorites @relation(fields: [favoriteId], references: [id])
-  favoriteId Int
-  product    Product   @relation(fields: [productId], references: [id])
-  productId  Int
-  assignedAt DateTime  @default(now())
-  assignedBy String
+model ProductOnFavorites {
+  favorites   Favorites @relation(fields: [favoritesId], references: [id])
+  favoritesId Int
+  product     Product   @relation(fields: [productId], references: [id])
+  productId   Int
+  assignedAt  DateTime  @default(now())
+  assignedBy  String
 
-  @@id([favoriteId, productId])
+  @@id([favoritesId, productId])
 }

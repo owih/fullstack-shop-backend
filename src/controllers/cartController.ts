@@ -76,6 +76,13 @@ class CartController {
         where: {
           id: cartId,
         },
+        include: {
+          products: {
+            include: {
+              product: true,
+            },
+          },
+        },
       });
 
       return res.status(200).json({ cart });
@@ -113,6 +120,13 @@ class CartController {
       const cart: Cart | null = await prisma.cart.findUnique({
         where: {
           id: cartId,
+        },
+        include: {
+          products: {
+            include: {
+              product: true,
+            },
+          },
         },
       });
 
@@ -154,6 +168,13 @@ class CartController {
       const cart: Cart | null = await prisma.cart.findUnique({
         where: {
           id: cartId,
+        },
+        include: {
+          products: {
+            include: {
+              product: true,
+            },
+          },
         },
       });
 
