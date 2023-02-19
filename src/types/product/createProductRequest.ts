@@ -7,7 +7,6 @@ type CreateProductRequest = {
   sale?: number;
   description: string;
   stock: number;
-  images?: File[];
   user: string | JwtPayload;
 };
 

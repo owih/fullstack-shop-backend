@@ -1,6 +1,7 @@
 import ApiError from '../error/ApiError';
 import prisma from '../prisma';
-import { Product } from '@prisma/client';
+import * as uuid from 'uuid';
+import { Product, ProductImage, ProductOnType, ProductType } from '@prisma/client';
 import { NextFunction } from 'express';
 import { TypedResponse } from '../types/response/typedResponse';
 import RequestWithBody from '../types/request/requestWithBody';
@@ -8,11 +9,13 @@ import RequestWithQuery from '../types/request/requestWithQuery';
 import CreateProductRequest from '../types/product/createProductRequest';
 import { RequestWithQueryAndBody } from '../types/request/requestWithQueryAndBody';
 import DeleteProductRequest from '../types/product/deleteProductRequest';
+import path from 'path';
+import { UploadedFile } from 'express-fileupload';
 
 class ProductController {
   async getAll(
     req: RequestWithQuery<{ type: string; limit: string; page: string }>,
-    res: TypedResponse<{ products: Product[] }>,
+    res: TypedResponse<{ products: Product[]; count: number }>,
     next: NextFunction,
   ) {
     try {
@@ -23,6 +26,7 @@ class ProductController {
       const offset: number = pageParsed * limitParsed - limitParsed;
 
       let products: Product[] = [];
+      let productsCount = 0;
 
       if (type) {
         products = await prisma.product.findMany({
@@ -49,17 +53,24 @@ class ProductController {
           take: limitParsed,
           include: {
             type: {
-              include: {
+              select: {
                 type: true,
+              },
+            },
+            image: {
+              select: {
+                name: true,
+                url: true,
               },
             },
           },
         });
+        productsCount = await prisma.product.count();
       }
 
-      return res.status(200).json({ products });
+      return res.status(200).json({ products, count: productsCount || products.length });
     } catch (e) {
-      return next(ApiError.internal('Error while registration'));
+      return next(ApiError.internal('Error while get products'));
     }
   }
 
@@ -82,6 +93,19 @@ class ProductController {
         where: {
           id: Number(id),
         },
+        include: {
+          type: {
+            select: {
+              type: true,
+            },
+          },
+          image: {
+            select: {
+              name: true,
+              url: true,
+            },
+          },
+        },
       });
 
       return res.status(200).json({ product });
@@ -96,26 +120,92 @@ class ProductController {
     next: NextFunction,
   ) {
     try {
-      const { name, sale, price, stock, description } = req.body;
-
-      //TODO: Update product with type/images/size params
+      console.log(req.body);
+      console.log(req.files?.image);
+      const { name, sale, price, stock, description, type } = req.body;
+      const image = req.files?.image as UploadedFile;
 
       if (!name || !price || !stock || !description) {
         return next(ApiError.badRequest('Incorrect data'));
       }
 
-      const product: Product = await prisma.product.create({
-        data: {
-          name,
-          price,
-          stock,
-          description,
-          sale: sale || 0,
+      const searchProductWithRequestedName: Product | null = await prisma.product.findFirst({
+        where: {
+          name: {
+            equals: name,
+            mode: 'insensitive',
+          },
         },
       });
 
+      if (searchProductWithRequestedName) {
+        return next(ApiError.internal('The product is already exist'));
+      }
+
+      const productType: ProductType | null = await prisma.productType.findFirst({
+        where: {
+          name: {
+            equals: name,
+            mode: 'insensitive',
+          },
+        },
+      });
+
+      const product: Product = await prisma.product.create({
+        data: {
+          name,
+          price: Number(price),
+          stock: Number(stock),
+          description,
+          sale: Number(sale) || 0,
+        },
+      });
+
+      console.log(productType);
+      if (productType) {
+        await prisma.productOnType.create({
+          data: {
+            productId: product.id,
+            typeId: productType.id,
+            assignedBy: '',
+          },
+        });
+      }
+
+      if (!image) return;
+      if (image.size > 3145728) {
+        return next(ApiError.internal('Image size must be less then 3 MB'));
+      }
+
+      if (Array.isArray(image)) {
+        for (let i = 0; i < image.length; i++) {
+          const fileName = uuid.v4() + '.jpg';
+          await image[i].mv(path.resolve(__dirname, '..', 'static', fileName));
+
+          await prisma.productImage.create({
+            data: {
+              name: product.name,
+              productId: product.id,
+              url: fileName,
+            },
+          });
+        }
+      } else {
+        const fileName = uuid.v4() + '.jpg';
+        await image.mv(path.resolve(__dirname, '..', 'static', fileName));
+
+        await prisma.productImage.create({
+          data: {
+            name: product.name,
+            productId: product.id,
+            url: fileName,
+          },
+        });
+      }
+
       return res.status(200).json({ product });
     } catch (e) {
+      console.log(e);
       return next(ApiError.internal('Error while product create'));
     }
   }
