@@ -15,11 +15,20 @@ model User {
   role        Role   @default(USER)
   cartId      Int
   favoritesId Int
+  userInfoId  Int
 }
 
 enum Role {
   USER
   ADMIN
+}
+
+model UserInfo {
+  id      Int     @id @unique @default(autoincrement())
+  name    String?
+  address String?
+  city    String?
+  country String?
 }
 
 model Product {

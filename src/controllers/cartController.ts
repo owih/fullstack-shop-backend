@@ -4,32 +4,27 @@ import { Cart } from '@prisma/client';
 import { NextFunction } from 'express';
 import { TypedResponse } from '../types/response/typedResponse';
 import RequestWithBody from '../types/request/requestWithBody';
-import RequestWithQuery from '../types/request/requestWithQuery';
 import AddProductToCartRequest from '../types/cart/addProductToCartRequest';
 import UpdateCartRequest from '../types/cart/updateCartRequest';
 import DeleteProductFromCartRequest from '../types/cart/deleteProductFromCartRequest';
+import GetCartRequest from '../types/cart/getCartRequest';
 
 class CartController {
   async getCart(
-    req: RequestWithQuery<{ id: string }>,
+    req: RequestWithBody<GetCartRequest>,
     res: TypedResponse<{ cart: Cart | null }>,
     next: NextFunction,
   ) {
     try {
-      const { id } = req.params;
-      const fromTokenCartId = req.body.user.cartId;
+      const { cartId } = req.body.user;
 
-      if (!Number(id)) {
-        return next(ApiError.badRequest('Error while get cart'));
-      }
-
-      if (fromTokenCartId !== Number(id)) {
+      if (!Number(cartId)) {
         return next(ApiError.badRequest('Error while get cart'));
       }
 
       const cart: Cart | null = await prisma.cart.findUnique({
         where: {
-          id: Number(id),
+          id: Number(cartId),
         },
         include: {
           products: {
@@ -52,15 +47,10 @@ class CartController {
     next: NextFunction,
   ) {
     try {
-      console.log(req.body);
-      const { cartId, productId } = req.body;
-      const fromTokenCartId = req.body.user.cartId;
+      const { productId } = req.body;
+      const { cartId } = req.body.user;
 
       if (!cartId || !productId) {
-        return next(ApiError.badRequest('Error while add product'));
-      }
-
-      if (fromTokenCartId !== cartId) {
         return next(ApiError.badRequest('Error while add product'));
       }
 
@@ -97,14 +87,10 @@ class CartController {
     next: NextFunction,
   ) {
     try {
-      const { cartId, productId } = req.body;
-      const fromTokenCartId = req.body.user.cartId;
+      const { productId } = req.body;
+      const { cartId } = req.body.user;
 
       if (!cartId || !productId) {
-        return next(ApiError.badRequest('Error while add product'));
-      }
-
-      if (fromTokenCartId !== cartId) {
         return next(ApiError.badRequest('Error while add product'));
       }
 
@@ -142,14 +128,10 @@ class CartController {
     next: NextFunction,
   ) {
     try {
-      const { cartId, productId, count } = req.body;
-      const fromTokenCartId = req.body.user.cartId;
+      const { productId, count } = req.body;
+      const { cartId } = req.body.user;
 
       if (!cartId || !productId) {
-        return next(ApiError.badRequest('Error while add product'));
-      }
-
-      if (fromTokenCartId !== cartId) {
         return next(ApiError.badRequest('Error while add product'));
       }
 
