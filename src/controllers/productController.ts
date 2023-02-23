@@ -1,7 +1,7 @@
 import ApiError from '../error/ApiError';
 import prisma from '../prisma';
 import * as uuid from 'uuid';
-import { Product, ProductImage, ProductOnType, ProductType } from '@prisma/client';
+import { Product, ProductType } from '@prisma/client';
 import { NextFunction } from 'express';
 import { TypedResponse } from '../types/response/typedResponse';
 import RequestWithBody from '../types/request/requestWithBody';
@@ -145,7 +145,7 @@ class ProductController {
       const productType: ProductType | null = await prisma.productType.findFirst({
         where: {
           name: {
-            equals: name,
+            equals: type,
             mode: 'insensitive',
           },
         },

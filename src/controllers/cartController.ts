@@ -1,6 +1,6 @@
 import ApiError from '../error/ApiError';
 import prisma from '../prisma';
-import { Cart } from '@prisma/client';
+import { Product, ProductOnCart } from '@prisma/client';
 import { NextFunction } from 'express';
 import { TypedResponse } from '../types/response/typedResponse';
 import RequestWithBody from '../types/request/requestWithBody';
@@ -12,7 +12,7 @@ import GetCartRequest from '../types/cart/getCartRequest';
 class CartController {
   async getCart(
     req: RequestWithBody<GetCartRequest>,
-    res: TypedResponse<{ cart: Cart | null }>,
+    res: TypedResponse<{ cart: ProductOnCart[] }>,
     next: NextFunction,
   ) {
     try {
@@ -22,20 +22,30 @@ class CartController {
         return next(ApiError.badRequest('Error while get cart'));
       }
 
-      const cart: Cart | null = await prisma.cart.findUnique({
+      const productOnCart: ProductOnCart[] = await prisma.productOnCart.findMany({
         where: {
-          id: Number(cartId),
+          cartId: Number(cartId),
         },
         include: {
-          products: {
+          product: {
             include: {
-              product: true,
+              type: {
+                select: {
+                  type: true,
+                },
+              },
+              image: {
+                select: {
+                  name: true,
+                  url: true,
+                },
+              },
             },
           },
         },
       });
 
-      return res.status(200).json({ cart });
+      return res.status(200).json({ cart: productOnCart });
     } catch (e) {
       return next(ApiError.internal('Error while get product'));
     }
@@ -43,7 +53,7 @@ class CartController {
 
   async addProduct(
     req: RequestWithBody<AddProductToCartRequest>,
-    res: TypedResponse<{ cart: Cart | null }>,
+    res: TypedResponse<{ cart: ProductOnCart[] }>,
     next: NextFunction,
   ) {
     try {
@@ -56,26 +66,37 @@ class CartController {
 
       await prisma.productOnCart.create({
         data: {
+          count: 1,
           cartId: Number(cartId),
           productId: Number(productId),
           assignedBy: '',
         },
       });
 
-      const cart: Cart | null = await prisma.cart.findUnique({
+      const productOnCart: ProductOnCart[] = await prisma.productOnCart.findMany({
         where: {
-          id: cartId,
+          cartId: Number(cartId),
         },
         include: {
-          products: {
+          product: {
             include: {
-              product: true,
+              type: {
+                select: {
+                  type: true,
+                },
+              },
+              image: {
+                select: {
+                  name: true,
+                  url: true,
+                },
+              },
             },
           },
         },
       });
 
-      return res.status(200).json({ cart });
+      return res.status(200).json({ cart: productOnCart });
     } catch (e) {
       return next(ApiError.internal('Error while add product'));
     }
@@ -83,7 +104,7 @@ class CartController {
 
   async deleteProduct(
     req: RequestWithBody<DeleteProductFromCartRequest>,
-    res: TypedResponse<{ cart: Cart | null }>,
+    res: TypedResponse<{ cart: ProductOnCart[] }>,
     next: NextFunction,
   ) {
     try {
@@ -103,20 +124,30 @@ class CartController {
         },
       });
 
-      const cart: Cart | null = await prisma.cart.findUnique({
+      const productOnCart: ProductOnCart[] = await prisma.productOnCart.findMany({
         where: {
-          id: cartId,
+          cartId: Number(cartId),
         },
         include: {
-          products: {
+          product: {
             include: {
-              product: true,
+              type: {
+                select: {
+                  type: true,
+                },
+              },
+              image: {
+                select: {
+                  name: true,
+                  url: true,
+                },
+              },
             },
           },
         },
       });
 
-      return res.status(200).json({ cart });
+      return res.status(200).json({ cart: productOnCart });
     } catch (e) {
       return next(ApiError.internal('Error while product deleting'));
     }
@@ -124,7 +155,7 @@ class CartController {
 
   async update(
     req: RequestWithBody<UpdateCartRequest>,
-    res: TypedResponse<{ cart: Cart | null }>,
+    res: TypedResponse<{ cart: ProductOnCart[] }>,
     next: NextFunction,
   ) {
     try {
@@ -135,6 +166,18 @@ class CartController {
         return next(ApiError.badRequest('Error while add product'));
       }
 
+      const product: Product | null = await prisma.product.findFirst({
+        where: {
+          id: Number(productId),
+        },
+      });
+
+      if (!product) {
+        return next(ApiError.badRequest(`The product ${productId} not existed`));
+      }
+
+      const realCount = count > product.stock ? product.stock : count;
+
       await prisma.productOnCart.update({
         where: {
           cartId_productId: {
@@ -143,24 +186,34 @@ class CartController {
           },
         },
         data: {
-          count,
+          count: realCount,
         },
       });
 
-      const cart: Cart | null = await prisma.cart.findUnique({
+      const productOnCart: ProductOnCart[] = await prisma.productOnCart.findMany({
         where: {
-          id: cartId,
+          cartId: Number(cartId),
         },
         include: {
-          products: {
+          product: {
             include: {
-              product: true,
+              type: {
+                select: {
+                  type: true,
+                },
+              },
+              image: {
+                select: {
+                  name: true,
+                  url: true,
+                },
+              },
             },
           },
         },
       });
 
-      return res.status(200).json({ cart });
+      return res.status(200).json({ cart: productOnCart });
     } catch (e) {
       return next(ApiError.internal('Error while add product'));
     }
