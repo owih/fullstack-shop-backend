@@ -8,18 +8,13 @@ export default (req: Request, res: TypedResponse<{ message: string }>, next: Nex
     next();
   }
   try {
-    console.log('token');
     const token = req.headers?.authorization?.split(' ')[1];
-    console.log(token);
-    console.log(req.headers);
 
     if (!token) {
       return res.status(401).json({ message: 'Not authorized' });
     }
 
     req.body.user = jwt.verify(token, process.env.SECRET_KEY || 'secret') as Partial<User>;
-    console.log(req.body.user);
-    console.log('req');
 
     next();
   } catch (e) {

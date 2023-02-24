@@ -1,66 +1,66 @@
 import ApiError from '../error/ApiError';
 import prisma from '../prisma';
-import { Cart, Favorites } from '@prisma/client';
+import { ProductOnFavorites, User } from '@prisma/client';
 import { NextFunction } from 'express';
 import { TypedResponse } from '../types/response/typedResponse';
 import RequestWithBody from '../types/request/requestWithBody';
 import RequestWithQuery from '../types/request/requestWithQuery';
-import DeleteProductFromFavoritesRequest from '../types/favorites/deleteProductFavoritesCartRequest';
 import AddProductToFavoritesRequest from '../types/favorites/addProductToFavoritesRequest';
 
 class FavoritesController {
   async getFavorites(
     req: RequestWithQuery<{ id: string }>,
-    res: TypedResponse<{ favorites: Favorites | null }>,
+    res: TypedResponse<{ favorites: ProductOnFavorites[] }>,
     next: NextFunction,
   ) {
     try {
-      const { id } = req.params;
-      const fromTokenFavoritesId = req.body.user.cartId;
+      const { favoritesId } = req.body.user;
 
-      if (!Number(id)) {
+      if (!favoritesId) {
         return next(ApiError.badRequest('Error while get favorites'));
       }
 
-      if (fromTokenFavoritesId !== Number(id)) {
-        return next(ApiError.badRequest('Error while get favorites'));
-      }
-
-      const favorites: Favorites | null = await prisma.favorites.findUnique({
-        where: {
-          id: Number(id),
-        },
-        include: {
-          products: {
-            include: {
-              product: true,
+      const productOnFavorites: ProductOnFavorites[] =
+        await prisma.productOnFavorites.findMany({
+          where: {
+            favoritesId,
+          },
+          include: {
+            product: {
+              include: {
+                type: {
+                  select: {
+                    type: true,
+                  },
+                },
+                image: {
+                  select: {
+                    name: true,
+                    url: true,
+                  },
+                },
+              },
             },
           },
-        },
-      });
+        });
 
-      return res.status(200).json({ favorites });
+      return res.status(200).json({ favorites: productOnFavorites });
     } catch (e) {
-      return next(ApiError.internal('Error while get product'));
+      return next(ApiError.internal('Error while get favorites'));
     }
   }
 
   async addProduct(
     req: RequestWithBody<AddProductToFavoritesRequest>,
-    res: TypedResponse<{ favorites: Favorites | null }>,
+    res: TypedResponse<{ favorites: ProductOnFavorites[] }>,
     next: NextFunction,
   ) {
     try {
-      console.log(req.body);
-      const { favoritesId, productId } = req.body;
-      const fromTokenFavoritesId = req.body.user.cartId;
+      const { productId } = req.body;
+      const { favoritesId } = req.body.user;
 
-      if (!favoritesId || !productId) {
-        return next(ApiError.badRequest('Error while add product'));
-      }
-
-      if (fromTokenFavoritesId !== favoritesId) {
-        return next(ApiError.badRequest('Error while add product'));
+      if (!favoritesId || !Number(productId)) {
+        return next(ApiError.badRequest('Error while add favorites'));
       }
 
       await prisma.productOnFavorites.create({
@@ -71,67 +71,133 @@ class FavoritesController {
         },
       });
 
-      const favorites: Favorites | null = await prisma.favorites.findUnique({
-        where: {
-          id: favoritesId,
-        },
-        include: {
-          products: {
-            include: {
-              product: true,
+      const productOnFavorites: ProductOnFavorites[] =
+        await prisma.productOnFavorites.findMany({
+          where: {
+            favoritesId: favoritesId,
+          },
+          include: {
+            product: {
+              include: {
+                type: {
+                  select: {
+                    type: true,
+                  },
+                },
+                image: {
+                  select: {
+                    name: true,
+                    url: true,
+                  },
+                },
+              },
             },
           },
-        },
-      });
+        });
 
-      return res.status(200).json({ favorites });
+      return res.status(200).json({ favorites: productOnFavorites });
     } catch (e) {
-      return next(ApiError.internal('Error while add product'));
+      return next(ApiError.internal('Error while add favorites'));
     }
   }
 
   async deleteProduct(
-    req: RequestWithBody<DeleteProductFromFavoritesRequest>,
-    res: TypedResponse<{ favorites: Favorites | null }>,
+    req: RequestWithQuery<{ id: string }>,
+    res: TypedResponse<{ favorites: ProductOnFavorites[] }>,
     next: NextFunction,
   ) {
     try {
-      const { favoritesId, productId } = req.body;
-      const fromTokenFavoritesId = req.body.user.cartId;
+      const { id: productId } = req.params;
+      const { favoritesId } = req.body.user;
 
-      if (!favoritesId || !productId) {
-        return next(ApiError.badRequest('Error while add product'));
-      }
-
-      if (fromTokenFavoritesId !== favoritesId) {
-        return next(ApiError.badRequest('Error while add product'));
+      if (!favoritesId || !Number(productId)) {
+        return next(ApiError.badRequest('Error while delete from favorites'));
       }
 
       await prisma.productOnFavorites.delete({
         where: {
           favoritesId_productId: {
             favoritesId,
-            productId,
+            productId: Number(productId),
           },
         },
       });
 
-      const favorites: Favorites | null = await prisma.favorites.findUnique({
-        where: {
-          id: favoritesId,
-        },
-        include: {
-          products: {
-            include: {
-              product: true,
+      const productOnFavorites: ProductOnFavorites[] =
+        await prisma.productOnFavorites.findMany({
+          where: {
+            favoritesId: favoritesId,
+          },
+          include: {
+            product: {
+              include: {
+                type: {
+                  select: {
+                    type: true,
+                  },
+                },
+                image: {
+                  select: {
+                    name: true,
+                    url: true,
+                  },
+                },
+              },
             },
           },
+        });
+
+      return res.status(200).json({ favorites: productOnFavorites });
+    } catch (e) {
+      return next(ApiError.internal('Error while delete from favorites'));
+    }
+  }
+
+  async clear(
+    req: RequestWithBody<{ user: Partial<User> }>,
+    res: TypedResponse<{ favorites: ProductOnFavorites[] }>,
+    next: NextFunction,
+  ) {
+    try {
+      const { favoritesId } = req.body.user;
+
+      if (!favoritesId) {
+        return next(ApiError.badRequest('Error while delete from favorites'));
+      }
+
+      await prisma.productOnFavorites.deleteMany({
+        where: {
+          favoritesId,
         },
       });
 
-      return res.status(200).json({ favorites });
+      const productOnFavorites: ProductOnFavorites[] =
+        await prisma.productOnFavorites.findMany({
+          where: {
+            favoritesId: favoritesId,
+          },
+          include: {
+            product: {
+              include: {
+                type: {
+                  select: {
+                    type: true,
+                  },
+                },
+                image: {
+                  select: {
+                    name: true,
+                    url: true,
+                  },
+                },
+              },
+            },
+          },
+        });
+
+      return res.status(200).json({ favorites: productOnFavorites });
     } catch (e) {
-      return next(ApiError.internal('Error while product deleting'));
+      return next(ApiError.internal('Error while delete from favorites'));
     }
   }
 }

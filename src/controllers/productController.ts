@@ -14,12 +14,12 @@ import { UploadedFile } from 'express-fileupload';
 
 class ProductController {
   async getAll(
-    req: RequestWithQuery<{ type: string; limit: string; page: string }>,
+    req: RequestWithQuery<{ type: string; limit: string; page: string; name: string }>,
     res: TypedResponse<{ products: Product[]; count: number }>,
     next: NextFunction,
   ) {
     try {
-      const { type, limit, page } = req.query;
+      const { type, limit, page, name } = req.query;
 
       const pageParsed: number = Number(page) || 1;
       const limitParsed: number = Number(limit) || 9;
@@ -28,26 +28,69 @@ class ProductController {
       let products: Product[] = [];
       let productsCount = 0;
 
-      if (type) {
+      if (type || name) {
         products = await prisma.product.findMany({
           skip: offset,
           take: limitParsed,
           where: {
-            type: {
-              some: {
-                type: {
-                  name: {
-                    equals: type,
-                    mode: 'insensitive',
+            name: name
+              ? {
+                  contains: name,
+                  mode: 'insensitive',
+                }
+              : {},
+            type: type
+              ? {
+                  some: {
+                    type: {
+                      name: {
+                        equals: type,
+                        mode: 'insensitive',
+                      },
+                    },
                   },
-                },
+                }
+              : {},
+          },
+          include: {
+            type: {
+              select: {
+                type: true,
+              },
+            },
+            image: {
+              select: {
+                name: true,
+                url: true,
               },
             },
           },
         });
+        productsCount = await prisma.product.count({
+          where: {
+            name: name
+              ? {
+                  contains: name,
+                  mode: 'insensitive',
+                }
+              : {},
+            type: type
+              ? {
+                  some: {
+                    type: {
+                      name: {
+                        equals: type,
+                        mode: 'insensitive',
+                      },
+                    },
+                  },
+                }
+              : {},
+          },
+        });
       }
 
-      if (!type) {
+      if (!type && !name) {
         products = await prisma.product.findMany({
           skip: offset,
           take: limitParsed,
@@ -81,9 +124,6 @@ class ProductController {
   ) {
     try {
       const { id } = req.params;
-
-      console.log(id);
-      console.log(Number(id));
 
       if (!Number(id)) {
         return next(ApiError.badRequest('Incorrect id'));
@@ -120,8 +160,6 @@ class ProductController {
     next: NextFunction,
   ) {
     try {
-      console.log(req.body);
-      console.log(req.files?.image);
       const { name, sale, price, stock, description, type } = req.body;
       const image = req.files?.image as UploadedFile;
 
@@ -161,7 +199,6 @@ class ProductController {
         },
       });
 
-      console.log(productType);
       if (productType) {
         await prisma.productOnType.create({
           data: {
@@ -205,7 +242,6 @@ class ProductController {
 
       return res.status(200).json({ product });
     } catch (e) {
-      console.log(e);
       return next(ApiError.internal('Error while product create'));
     }
   }
@@ -217,9 +253,6 @@ class ProductController {
   ) {
     try {
       const { id } = req.params;
-
-      console.log(id);
-      console.log(Number(id));
 
       if (!Number(id)) {
         return next(ApiError.badRequest('Incorrect id'));

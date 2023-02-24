@@ -1,7 +1,7 @@
 import { User } from '@prisma/client';
 
-type GetCartRequest = {
+type CartRequest = {
   user: Partial<User>;
 };
 
-export default GetCartRequest;
+export default CartRequest;

@@ -37,9 +37,6 @@ class UserController {
     try {
       const { email, name, password } = req.body;
 
-      console.log('registration');
-      console.log(req.body);
-
       if (!email || !password || !name) {
         return next(ApiError.badRequest('Incorrect form data'));
       }
@@ -96,7 +93,6 @@ class UserController {
 
       return res.status(200).json({ token });
     } catch (e) {
-      console.log('catch');
       return next(ApiError.internal('Error while registration'));
     }
   }
@@ -105,7 +101,6 @@ class UserController {
     res: TypedResponse<{ token: string }>,
     next: NextFunction,
   ) {
-    console.log(req.body);
     try {
       const { email, password } = req.body;
 
@@ -165,7 +160,6 @@ class UserController {
     res: TypedResponse<{ userInfo: UserInfo | null }>,
     next: NextFunction,
   ) {
-    console.log(req.body);
     try {
       const { id } = req.body.user;
 
@@ -194,19 +188,15 @@ class UserController {
     res: TypedResponse<{ token: string; userInfo: UserInfo }>,
     next: NextFunction,
   ) {
-    console.log(req.body);
     try {
       const { name, address, country, city } = req.body;
       const { userInfoId } = req.body.user;
-
-      console.log(req.body.user);
 
       const userInfo: UserInfo | null = await prisma.userInfo.findFirst({
         where: {
           id: userInfoId,
         },
       });
-      console.log(userInfo, ' userInfo');
 
       const userInfoUpdated: UserInfo | null = await prisma.userInfo.update({
         where: {
@@ -220,8 +210,6 @@ class UserController {
         },
       });
 
-      console.log(userInfoUpdated, ' userInfoUpdated');
-
       const token = generateJwt({
         id: req.body.user.id,
         email: req.body.user.email,
@@ -231,11 +219,8 @@ class UserController {
         userInfoId: req.body.user.userInfoId,
       });
 
-      console.log(token, ' token');
-
       return res.status(200).json({ token, userInfo: userInfoUpdated });
     } catch (e) {
-      console.log(e);
       return next(ApiError.internal('Error while login'));
     }
   }
@@ -245,7 +230,6 @@ class UserController {
     res: TypedResponse<{ token: string }>,
     next: NextFunction,
   ) {
-    console.log(req.body);
     try {
       const { oldPassword, newPassword } = req.body;
       const { id } = req.body.user;

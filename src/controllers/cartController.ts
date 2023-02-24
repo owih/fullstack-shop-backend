@@ -6,12 +6,12 @@ import { TypedResponse } from '../types/response/typedResponse';
 import RequestWithBody from '../types/request/requestWithBody';
 import AddProductToCartRequest from '../types/cart/addProductToCartRequest';
 import UpdateCartRequest from '../types/cart/updateCartRequest';
-import DeleteProductFromCartRequest from '../types/cart/deleteProductFromCartRequest';
-import GetCartRequest from '../types/cart/getCartRequest';
+import CartRequest from '../types/cart/cartRequest';
+import RequestWithQuery from '../types/request/requestWithQuery';
 
 class CartController {
   async getCart(
-    req: RequestWithBody<GetCartRequest>,
+    req: RequestWithBody<CartRequest>,
     res: TypedResponse<{ cart: ProductOnCart[] }>,
     next: NextFunction,
   ) {
@@ -103,15 +103,15 @@ class CartController {
   }
 
   async deleteProduct(
-    req: RequestWithBody<DeleteProductFromCartRequest>,
+    req: RequestWithQuery<{ productId: string }>,
     res: TypedResponse<{ cart: ProductOnCart[] }>,
     next: NextFunction,
   ) {
     try {
-      const { productId } = req.body;
+      const { id: productId } = req.params;
       const { cartId } = req.body.user;
 
-      if (!cartId || !productId) {
+      if (!cartId || !Number(productId)) {
         return next(ApiError.badRequest('Error while add product'));
       }
 
@@ -119,7 +119,7 @@ class CartController {
         where: {
           cartId_productId: {
             cartId,
-            productId,
+            productId: Number(productId),
           },
         },
       });
@@ -178,21 +178,35 @@ class CartController {
 
       const realCount = count > product.stock ? product.stock : count;
 
-      await prisma.productOnCart.update({
-        where: {
-          cartId_productId: {
-            cartId,
-            productId,
+      if (count <= 0) {
+        await prisma.productOnCart.delete({
+          where: {
+            cartId_productId: {
+              cartId,
+              productId,
+            },
           },
-        },
-        data: {
-          count: realCount,
-        },
-      });
+        });
+      } else {
+        await prisma.productOnCart.update({
+          where: {
+            cartId_productId: {
+              cartId,
+              productId,
+            },
+          },
+          data: {
+            count: realCount,
+          },
+        });
+      }
 
       const productOnCart: ProductOnCart[] = await prisma.productOnCart.findMany({
         where: {
           cartId: Number(cartId),
+        },
+        orderBy: {
+          assignedAt: 'asc',
         },
         include: {
           product: {

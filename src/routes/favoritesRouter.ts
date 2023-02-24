@@ -4,8 +4,9 @@ import favoritesController from '../controllers/favoritesController';
 
 const router = Router();
 
-router.get('/:id', authMiddleWare, favoritesController.getFavorites);
+router.get('/', authMiddleWare, favoritesController.getFavorites);
 router.put('/', authMiddleWare, favoritesController.addProduct);
-router.delete('/', authMiddleWare, favoritesController.deleteProduct);
+router.delete('/:id', authMiddleWare, favoritesController.deleteProduct);
+router.delete('/', authMiddleWare, favoritesController.clear);
 
 export default router;
