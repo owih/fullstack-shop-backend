@@ -5,8 +5,8 @@
   "scripts": {
     "watch": "tsc -w",
     "serve": "nodemon .\\dist\\index.js",
-    "build": "npx tsc",
-    "start": "node ./dist/index.js",
+    "start": "npx tsc",
+    "build": "node ./dist/index.js",
     "lint": "eslint . --ext .ts"
   },
   "keywords": [],
